@@ -18,7 +18,7 @@ const signup = (req,res) => {
     const user = {
         username: req.body.username,
         email: req.body.email,
-        password: req.body.password,
+        password: req.body.password ? sha256(req.body.password) : null,
         fullName: req.body.fullName,
         gender: req.body.gender,
         birthdate: req.body.birthdate ? req.body.birthdate: null,
@@ -27,7 +27,7 @@ const signup = (req,res) => {
         certiFilename: req.body.certiFilename ? req.body.certiFilename: null,
         roleId: req.body.certiFilename ? 2 : 3
     }
-
+    
     // Validate request
     if (!user.username || !user.email || !user.password || !user.fullName) {
         res.status(400).send({
@@ -60,8 +60,9 @@ const signup = (req,res) => {
                     subject: 'Account Activation Link',
                     html:
                         `<h2>Pleace click on the given link to activate your a>ccount</h2>
-                        <p>${process.env.CLIENT_URL}/auth/activate/${token}</p`
+                        <p>${process.env.CLIENT_URL}/auth/activate/${token}</p>`
                 }
+                
                 mg.messages().send(data, (err,body) => {
                     if(err) return res.status(500).send({
                         success: false,
@@ -95,6 +96,7 @@ const activation = (req,res) => {
                     success: false,
                     message: "Incorrect or Expired link."
                 })
+
                 const user = {
                     username: decodedToken.user.username,
                     email: decodedToken.user.email,
@@ -107,6 +109,7 @@ const activation = (req,res) => {
                     certiFilename: decodedToken.user.certiFilename,
                     roleId: decodedToken.user.roleId
                 }
+
                 User.create(user)
                     .then((data) => {
                         res.status(201).send({
@@ -135,7 +138,7 @@ const activation = (req,res) => {
 const login = (req,res) => {
     var checkUser = {
         username: req.body.username,
-        password: req.body.password
+        password: req.body.password ? sha256(sha256(req.body.password)) : null
     }
 
     // Checking information from database
