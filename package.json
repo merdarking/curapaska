@@ -1,0 +1,30 @@
+{
+  "name": "curapaska-node",
+  "version": "1.0.0",
+  "description": "Cura Paska Restful API",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon start"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "mysql",
+    "sequelize",
+    "cors",
+    "jsonwebtoken"
+  ],
+  "author": "Tania Lapalelo",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
+    "mailgun-js": "^0.22.0",
+    "mysql2": "^2.3.0",
+    "sequelize": "^6.6.5",
+    "sha256": "^0.2.0"
+  }
+}
