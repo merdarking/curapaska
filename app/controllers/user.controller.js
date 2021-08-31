@@ -147,12 +147,23 @@ const login = (req,res) => {
             
             // Check if there is user or not
             if (result) {
+                const signed = {
+                    username: result.username,
+                    fullName: result.fullName,
+                    email: result.email,
+                    status: result.status
+                }
 
                 // Check if the password is correct or not
                 if (checkUser.password === result.password) {
+                    const token = jwt.sign({ signed },
+                        process.env.JWT_ACC_LOGGEDIN,
+                        { expiresIn: '7d' })
+
                     res.status(200).send({
                         success: true,
                         message: "User logged in",
+                        token: token
                     })
                 }
                 else {
