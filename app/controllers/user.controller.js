@@ -1,6 +1,7 @@
 // Module dependencies
 const db = require("../models");
 const User = db.users;
+const AccessToken = db.access_tokens;
 const Op = db.Sequelize.Op; // option
 
 require('dotenv').config();
@@ -62,7 +63,7 @@ const signup = (req,res) => {
                         `<h2>Pleace click on the given link to activate your a>ccount</h2>
                         <p>${process.env.CLIENT_URL}/auth/activate/${token}</p>`
                 }
-                
+                                
                 mg.messages().send(data, (err,body) => {
                     if(err) return res.status(500).send({
                         success: false,
@@ -140,9 +141,9 @@ const login = (req,res) => {
         username: req.body.username,
         password: req.body.password ? sha256(sha256(req.body.password)) : null
     }
-
+    
     // Checking information from database
-    User.findOne( { where: { username: checkUser.username }})
+    const item = User.findOne( { where: { username: checkUser.username }})
         .then((result) => {
             
             // Check if there is user or not
@@ -159,12 +160,13 @@ const login = (req,res) => {
                     const token = jwt.sign({ signed },
                         process.env.JWT_ACC_LOGGEDIN,
                         { expiresIn: '7d' })
-
+                    
                     res.status(200).send({
                         success: true,
                         message: "User logged in",
                         token: token
                     })
+                    return token
                 }
                 else {
                     res.status(401).send({
@@ -187,10 +189,37 @@ const login = (req,res) => {
                     err.message || "Some error occured while retrieving user data"
             }))
         })
+        
+}
+
+// Profile Update
+const changeProfile = (req,res) => {
+    const token = req.body.token
+    const user = {
+        birthdate: req.body.birthdate,
+        phoneNumber: req.body.phoneNumber
+    }
+        
+    User.update( user, { where : {id: user.id}})
+        .then((result) => {
+            res.status(200).send({
+                success: true,
+                message: `Profile updated successfully`,
+                data: result
+            })
+    })
+        .catch((err) => {
+            res.status(500).send(({
+                success: false,
+                message:
+                    err.message || "Some error occured while retrieving user data"
+            }))
+    })
 }
 
 module.exports = {
     signup,
     activation,
-    login
+    login,
+    changeProfile
 }

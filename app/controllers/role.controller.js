@@ -70,5 +70,6 @@ const roleFindOne = (req,res) => {
 }
 
 module.exports = {
-    roleAddition
+    roleAddition,
+    roleFindAll
 }

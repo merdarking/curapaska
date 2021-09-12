@@ -1,6 +1,5 @@
 module.exports = app => {
     const users = require("../controllers/user.controller.js");
-    const roles = require('../controllers/role.controller')
 
     let router = require("express").Router();
 
@@ -11,9 +10,9 @@ module.exports = app => {
     // API for login
     router.post('/login', users.login)
 
-    // API for role
-    router.post('/role', roles.roleAddition)
+    // API for change Profile
+    router.put('/update', users.changeProfile)
 
     // API Base
-    app.use("/api/v1/curapaska/us", router);   
+    app.use("/api/v1/curapaska/us", router);
 }

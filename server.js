@@ -38,6 +38,16 @@ db.sequelize.sync();
 // Users Routes
 require("./app/routes/user.routes")(app);
 
+// Roles Routes
+require("./app/routes/role.routes")(app);
+
+app.all('*', (req,res) => {
+    res.status(404).send({
+        success: false,
+        message: 'Page Not Found'
+    })
+})
+
 // Set port, listen for requests
 const PORT = process.env.PORT || 8080;
 
