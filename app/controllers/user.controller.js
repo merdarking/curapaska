@@ -1,7 +1,6 @@
 // Module dependencies
 const db = require("../models");
 const User = db.users;
-const AccessToken = db.access_tokens;
 const Op = db.Sequelize.Op; // option
 
 require('dotenv').config();
@@ -141,9 +140,9 @@ const login = (req,res) => {
         username: req.body.username,
         password: req.body.password ? sha256(sha256(req.body.password)) : null
     }
-    
+
     // Checking information from database
-    const item = User.findOne( { where: { username: checkUser.username }})
+    User.findOne( { where: { username: checkUser.username }})
         .then((result) => {
             
             // Check if there is user or not
@@ -160,13 +159,12 @@ const login = (req,res) => {
                     const token = jwt.sign({ signed },
                         process.env.JWT_ACC_LOGGEDIN,
                         { expiresIn: '7d' })
-                    
+                        
                     res.status(200).send({
                         success: true,
                         message: "User logged in",
                         token: token
                     })
-                    return token
                 }
                 else {
                     res.status(401).send({
@@ -189,32 +187,50 @@ const login = (req,res) => {
                     err.message || "Some error occured while retrieving user data"
             }))
         })
-        
 }
 
 // Profile Update
 const changeProfile = (req,res) => {
     const token = req.body.token
-    const user = {
-        birthdate: req.body.birthdate,
-        phoneNumber: req.body.phoneNumber
-    }
-        
-    User.update( user, { where : {id: user.id}})
-        .then((result) => {
-            res.status(200).send({
-                success: true,
-                message: `Profile updated successfully`,
-                data: result
+
+    if (token) {
+        jwt.verify(token,
+            process.env.JWT_ACC_LOGGEDIN,
+            (err, decodedToken) => {
+                if (err) return res.status(410).send({
+                    success: false,
+                    message: "Incorrect or Expired link."
+                })
+
+                username = decodedToken.signed.username
+                
+                const changed = {
+                    birthdate: req.body.birthdate,
+                    phoneNumber: req.body.phoneNumber
+                }
+
+                User.update(changed , { where : {username: username}})
+                    .then((result) => {
+                        res.status(200).send({
+                            success: true,
+                            message: 'Profile updated successfully'
+                        })
+                    })
+                    .catch((err) => {
+                        res.status(500).send({
+                            success: false,
+                            message:
+                                err.message || "Some error occured while retrieving user data"
+                        })
+                    })
             })
-    })
-        .catch((err) => {
-            res.status(500).send(({
-                success: false,
-                message:
-                    err.message || "Some error occured while retrieving user data"
-            }))
-    })
+    }
+    else {
+        res.status(400).send({
+            success: false,
+            message: "No token available"
+        })
+    }
 }
 
 module.exports = {

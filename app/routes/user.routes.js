@@ -11,7 +11,7 @@ module.exports = app => {
     router.post('/login', users.login)
 
     // API for change Profile
-    router.put('/update', users.changeProfile)
+    router.put('/update/', users.changeProfile)
 
     // API Base
     app.use("/api/v1/curapaska/us", router);

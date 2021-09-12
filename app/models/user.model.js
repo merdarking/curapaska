@@ -56,7 +56,7 @@ module.exports = (sequelize, Sequelize) => {
         certiFilename: {
             type: Sequelize.STRING,
             allowNull: true,
-        },
+        }
     });
 
     return User;
