@@ -14,20 +14,20 @@ module.exports = (sequelize, Sequelize) => {
     const User = sequelize.define("user", {
         username: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
             unique: true
         },
         password: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         fullName: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         gender: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         birthdate: {
             type: Sequelize.STRING,
@@ -51,6 +51,7 @@ module.exports = (sequelize, Sequelize) => {
         },
         status: {
             type: Sequelize.STRING,
+            defaultValue: 'Active',
             allowNull: false,
         },
         certiFilename: {

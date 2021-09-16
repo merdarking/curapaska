@@ -12,6 +12,29 @@ const mg = mailgun({ apiKey: process.env.MAILGUN_APIKEY, domain: DOMAIN });
 const sha256 = require('sha256');
 const jwt = require('jsonwebtoken');
 
+const { OAuth2Client } = require('google-auth-library');
+
+// Google Oauth
+// Create and Save a New User (Signup)
+
+async function verify(req,res) {
+    // Token coba-coba niatania102
+    let token = req.body.token; //supposedly get from frontend
+    const client_id = '407408718192.apps.googleusercontent.com'; //get from frontend
+    // const client_id = req.body.client_id; //supposedly get from frontend
+    const client = new OAuth2Client(client_id);
+    // try {
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: client_id,  // Specify the CLIENT_ID of the app that accesses the backend
+        });
+        const payload = ticket.getPayload();
+        return payload;
+    // } catch (error) {
+    //     return error;
+    // }
+}
+
 // Create and Save a New User (Signup)
 const signup = (req,res) => {
     // Passing information from request
@@ -27,9 +50,9 @@ const signup = (req,res) => {
         certiFilename: req.body.certiFilename ? req.body.certiFilename: null,
         roleId: req.body.certiFilename ? 2 : 3
     }
-    
+    console.log('token: '+req.body.token);
     // Validate request
-    if (!user.username || !user.email || !user.password || !user.fullName) {
+    if (req.body.token==null && (!user.username || !user.email || !user.password || !user.fullName)) {
         res.status(400).send({
             success: false,
             message: "Content cannot be empty"
@@ -37,9 +60,59 @@ const signup = (req,res) => {
         return;
     }
 
+    // If register with Google Oauth 2, no need to verify anymore because Google's verified it
+    if(req.body.token){
+        let verifResult = verify(req);
+        verifResult.then(function(vResult) {
+            console.log(vResult) // "Some User token"
+
+            User.findOne( { where: { email: vResult.email }})
+            .then((result) => {
+                // Check if there is user or not
+                if (result) {
+                    res.status(400).send({
+                        success: false,
+                        message: "User already exists"
+                    })
+                }
+                else{
+                    if(vResult.email_verified == true){
+                        const user = {
+                            email: vResult.email,
+                            fullName: vResult.name,
+                            picture: vResult.picture,
+                            roleId: req.body.certiFilename ? 2 : 3
+                        }
+
+                        User.create(user)
+                            .then((data) => {
+                                res.status(201).send({
+                                    success: true,
+                                    message: "Sign up successfully"
+                                })
+                            })
+                            .catch((err) => {
+                                res.status(500).send({
+                                    success: false,
+                                    message:
+                                        err.message || "Some error occured when creating the user"
+                                })
+                            })
+                    }
+                }
+            })
+            .catch((error) => {
+            res.status(500).send(({
+                success: false,
+                message: error.message || "Some error occured while verifying token ID"
+            }))
+        })
+        })
+    }
+    else{
     // Account hasn't been activated
     User.findOne({ where: {[Op.or]:
-        [{username: user.username}, {email: user.email}]}})
+        [{username: user.username || ''}, {email: user.email}]}})
         .then((result) => {
             if (result) {
                 res.status(400).send({
@@ -62,7 +135,7 @@ const signup = (req,res) => {
                         `<h2>Pleace click on the given link to activate your a>ccount</h2>
                         <p>${process.env.CLIENT_URL}/auth/activate/${token}</p>`
                 }
-                                
+
                 mg.messages().send(data, (err,body) => {
                     if(err) return res.status(500).send({
                         success: false,
@@ -83,6 +156,8 @@ const signup = (req,res) => {
                     err.message || "Some error occures while registering user"
             })
         })
+    }
+
 }
 
 // Account activation
@@ -138,13 +213,15 @@ const activation = (req,res) => {
 const login = (req,res) => {
     var checkUser = {
         username: req.body.username,
+        email: req.body.email,
         password: req.body.password ? sha256(sha256(req.body.password)) : null
     }
 
     // Checking information from database
-    User.findOne( { where: { username: checkUser.username }})
+    User.findOne({ where: {[Op.or]:
+        [{username: checkUser.username}, {email: checkUser.email}]}})
         .then((result) => {
-            
+
             // Check if there is user or not
             if (result) {
                 const signed = {
@@ -153,17 +230,36 @@ const login = (req,res) => {
                     email: result.email,
                     status: result.status
                 }
+                // Check if login with Google Oauth 2
+                if(req.body.token){
+                    let verifResult = verify(req);
+                    verifResult.then(function(vResult) {
+                        console.log(vResult) // "Some User token"
+                        if(vResult.email_verified == true){
+                            res.status(200).send({
+                                success: vResult.email_verified,
+                                message: "Login verified Google Oauth",
+                                email: vResult.email
+                            })
+                        }
+                     })
+                     .catch((error) => {
+                        res.status(500).send(({
+                            success: false,
+                            message: error.message || "Some error occured while verifying token ID"
+                        }))
+                     })
+                }
 
                 // Check if the password is correct or not
-                if (checkUser.password === result.password) {
+                else if(checkUser.password === result.password) {
                     const token = jwt.sign({ signed },
                         process.env.JWT_ACC_LOGGEDIN,
                         { expiresIn: '7d' })
-                        
+
                     res.status(200).send({
                         success: true,
-                        message: "User logged in",
-                        token: token
+                        message: "User logged in"
                     })
                 }
                 else {
@@ -203,7 +299,7 @@ const changeProfile = (req,res) => {
                 })
 
                 username = decodedToken.signed.username
-                
+
                 const changed = {
                     birthdate: req.body.birthdate,
                     phoneNumber: req.body.phoneNumber
@@ -237,5 +333,6 @@ module.exports = {
     signup,
     activation,
     login,
-    changeProfile
+    changeProfile,
+    verify
 }

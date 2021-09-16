@@ -13,13 +13,13 @@
 module.exports = (sequelize, Sequelize) => {
     const AccessToken = sequelize.define("access_token", {
         accessToken: {
-            type: Sequelize.STRING,
+            type: Sequelize.TEXT,
             allowNull: false,
             unique: true
         },
         ipAddress: {
             type: Sequelize.STRING,
-            allowNull: false,
+            allowNull: true,
             unique: true
         },
     });
